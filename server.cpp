@@ -4,11 +4,28 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <assert.h>
 
 static void die(const char *msg){
     int error = errno;
     fprintf(stderr, "[%d] %s\n", error, msg);
     abort();
+}
+
+static int32_t read_full(int fd,char *buf, size_t n){
+    while(n>0){
+        ssize_t rv = read(fd, buf, n);
+        if(rv <= 0){
+            return -1;
+        }
+        assert((size_t)rv <= n);
+        buf += rv;
+    }
+    return 0;
+}
+
+static int32_t one_request(int connfd){
+
 }
 
 static void do_something(int connfd) {
@@ -38,6 +55,7 @@ int main() {
     int rv = bind(fd, (const struct sockaddr *)&addr, sizeof(addr));
     if (rv) { die("bind()"); }
 
+    //listener
     rv = listen(fd, SOMAXCONN);
     if (rv) { die("listen()"); }
 
@@ -50,9 +68,12 @@ int main() {
             continue;   //error
         }
 
-        do_something(connfd);
+        while(true){
+            int32_t error = one_request(connfd);
+            if(error) break;
+        }
         close(connfd);
     }
 
-    return 1;
+    return 0;
 }
