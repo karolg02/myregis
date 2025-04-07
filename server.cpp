@@ -47,9 +47,11 @@ static int32_t write_full(int fd, const char *buf, size_t n){
 
 const size_t k_max_msg = 4096;
 
+//connfd deskryptor
 static int32_t one_request(int connfd) {
-    //4 bytes header
+    // k_max_msg to maksymalna zawartosc wiadomosci, a 4 odpowiada za naglowek czyli ile danych przyjdzie
     char rbuf[4 + k_max_msg];
+    //errno jest do obslugi bledow
     errno = 0;
     int32_t err = read_full(connfd, rbuf, 4);
     if (err) {
@@ -74,21 +76,10 @@ static int32_t one_request(int connfd) {
     const char reply[] = "world";
     char wbuf[4 + sizeof(reply)];
     len = (uint32_t)strlen(reply);
+    //memcpy kopiuje N bajtow z src do dst
     memcpy(wbuf, &len, 4);
     memcpy(&wbuf[4], reply, len);
     return write_full(connfd, wbuf, 4 + len);
-}
-
-static void do_something(int connfd) {
-    char rbuf[64] = {};
-    ssize_t n = read(connfd, rbuf, sizeof(rbuf) - 1);
-    if (n < 0) {
-        die("read() error");
-    }
-    printf("client says: %s\n", rbuf);
-
-    char wbuf[] = "Received";
-    write(connfd, wbuf, strlen(wbuf));
 }
 
 int main() {
@@ -110,6 +101,7 @@ int main() {
     rv = listen(fd, SOMAXCONN);
     if (rv) { die("listen()"); }
 
+    //nasluchiwanie wiecej niz jednego requesta
     while (true) {
         //accept
         struct sockaddr_in client_addr = {};
